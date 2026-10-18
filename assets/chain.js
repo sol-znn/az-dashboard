@@ -198,44 +198,72 @@ async function scanNew() {
 }
 
 /**
- * Who voted on `ids`, and when. Contract state is the authority for each vote;
- * the scan supplies the time and the block, and the names of Pillars that have
- * since dissolved.
+ * Who voted on `ids`, and when, as `id -> { pillars, proxies }`.
+ *
+ * The contract accepts a vote block from any address and drops the vote on
+ * receive unless the sender is the named Pillar's owner (VoteByName) or a
+ * Pillar's producer (VoteByProdAddress). Both blocks are confirmed either way,
+ * so the scan alone cannot tell a counted vote from a refused one. Contract
+ * state is the authority for each Pillar's vote; a scanned block is credited to
+ * a Pillar only when its sender could have cast it, and everything else is a
+ * proxy vote: on chain, shown here, never counted.
+ *
+ * A Pillar that has since dissolved has no owner to check against, so its
+ * by-name block is credited when it matches the vote the contract still holds.
  */
 export async function votesFor(ids, since, pillarList, fresh = false) {
   if (fresh) await scanNew()
   await scanBack(since)
   const want = new Set(ids)
+  const ownerOf = new Map(pillarList.map((p) => [p.name, p.ownerAddress]))
   const producerName = new Map(pillarList.map((p) => [p.producerAddress, p.name]))
-  const latest = new Map() // `${name}|${id}` -> scanned vote, newest kept
+  const latest = new Map() // `${name}|${id}` -> newest block the Pillar could have sent
+  const orphans = [] // by-name blocks for Pillars that no longer exist
+  const others = []
+  const keepNewest = (map, key, v) => {
+    const prev = map.get(key)
+    if (!prev || v.time > prev.time) map.set(key, v)
+  }
   for (const v of scanned.values()) {
     if (!want.has(v.id)) continue
-    const name = v.by === 'name' ? v.name : producerName.get(v.producer)
-    if (!name) continue
-    const key = `${name}|${v.id}`
-    const prev = latest.get(key)
-    if (!prev || v.time > prev.time) latest.set(key, { ...v, name })
+    if (v.by === 'producer') {
+      const name = producerName.get(v.producer)
+      if (name) keepNewest(latest, `${name}|${v.id}`, { ...v, name })
+      else others.push(v)
+    } else if (!ownerOf.has(v.name)) orphans.push(v)
+    else if (ownerOf.get(v.name) === v.from) keepNewest(latest, `${v.name}|${v.id}`, v)
+    else others.push(v)
   }
+
   const names = new Set(pillarList.map((p) => p.name))
-  for (const v of latest.values()) names.add(v.name)
+  for (const v of orphans) names.add(v.name)
   const nameList = [...names]
   const answers = await batch(nameList.map((n) => ['embedded.accelerator.getPillarVotes', [n, ids]]))
-  const byId = new Map(ids.map((id) => [id, []]))
-  nameList.forEach((name, i) => {
-    const row = answers[i]
-    if (!row) return
-    row.forEach((pv, j) => {
-      if (!pv) return
-      const seen = latest.get(`${name}|${ids[j]}`)
-      byId.get(ids[j]).push({
-        name,
-        vote: pv.vote,
-        time: seen?.time ?? null,
-        hash: seen?.hash ?? null,
-      })
-    })
-  })
-  for (const list of byId.values()) list.sort((a, b) => (b.time ?? 0) - (a.time ?? 0))
+  const held = new Map() // `${name}|${id}` -> vote in contract state
+  nameList.forEach((name, i) => (answers[i] ?? []).forEach((pv, j) => pv && held.set(`${name}|${ids[j]}`, pv.vote)))
+  for (const v of orphans) {
+    if (held.get(`${v.name}|${v.id}`) === v.vote) keepNewest(latest, `${v.name}|${v.id}`, v)
+    else others.push(v)
+  }
+
+  const byId = new Map(ids.map((id) => [id, { pillars: [], proxies: [] }]))
+  for (const [key, vote] of held) {
+    const [name, id] = key.split('|')
+    const seen = latest.get(key)
+    byId.get(id).pillars.push({ name, vote, time: seen?.time ?? null, hash: seen?.hash ?? null })
+  }
+  // A proxy voter's latest block stands, the way a Pillar's latest vote does.
+  // Kept apart per claimed name: an owner of two Pillars who votes for both from
+  // one address gets the second refused, and that row should say which.
+  const proxy = new Map()
+  for (const v of others) keepNewest(proxy, `${v.from}|${v.name ?? ''}|${v.id}`, v)
+  for (const v of proxy.values()) {
+    byId.get(v.id).proxies.push({ address: v.from, claimed: v.name ?? null, vote: v.vote, time: v.time, hash: v.hash })
+  }
+  for (const { pillars, proxies } of byId.values()) {
+    pillars.sort((a, b) => (b.time ?? 0) - (a.time ?? 0))
+    proxies.sort((a, b) => b.time - a.time)
+  }
   return byId
 }
 
@@ -273,7 +301,11 @@ function toBase64(bytes) {
   return btoa(s)
 }
 
-/** ABI data for a vote: by name from the owner address, by producer address otherwise. */
+/**
+ * ABI data for a vote: by name from the owner address, by producer address
+ * otherwise. A proxy vote goes by producer address too: it claims no Pillar's
+ * name, and the contract refuses it on receive all the same.
+ */
 export function voteData(id, vote, pillarName) {
   if (pillarName == null) return concat(fromHex(SEL_VOTE_BY_PROD), fromHex(id), word(vote))
   const name = new TextEncoder().encode(pillarName)

@@ -24,6 +24,9 @@ const state = {
   items: [],
   now: Math.floor(Date.now() / 1000),
   open: new Set(),
+  openSections: new Set(), // vote ids whose folded section is expanded; survives re-render
+  refreshing: false,
+  justOpened: null, // the project whose body plays its slide-in on this render
   votes: new Map(), // project id -> Map(vote id -> voters)
   loadingVotes: new Set(),
   account: null, // { address, chainId, pillar, byName }
@@ -189,10 +192,19 @@ function ordered(group) {
 
 // ---------- rendering ----------
 
+// The page refreshes every few seconds and most refreshes change nothing; leaving
+// the DOM alone then keeps hover, focus and a text selection where they were.
+const rendered = new Map()
+function setHtml(sel, html) {
+  if (rendered.get(sel) === html) return
+  rendered.set(sel, html)
+  $(sel).innerHTML = html
+}
+
 function render() {
   const needed = chain.quorum(state.pillars.length)
   const count = (g) => state.items.filter((it) => it.group === g).length
-  $('#strip').innerHTML = [
+  setHtml('#strip', [
     ['Phase votes', count('payout')],
     ['Project votes', count('open')],
     ['In progress', count('funded')],
@@ -200,7 +212,7 @@ function render() {
     ['Quorum', needed],
   ]
     .map(([k, v]) => `<div class="stat"><div class="label">${k}</div><div class="v">${v}</div></div>`)
-    .join('')
+    .join(''))
 
   const html = []
   for (const [key, title] of GROUPS) {
@@ -219,9 +231,11 @@ function render() {
        <div class="list">${list.map(itemHtml).join('')}</div></section>`,
     )
   }
-  $('#groups').innerHTML =
+  setHtml(
+    '#groups',
     html.join('') ||
-    (state.discovered ? '<p class="dim">None yet</p>' : '<p class="dim loading">Loading projects<span class="ell"></span></p>')
+      (state.discovered ? '<p class="dim">None yet</p>' : '<p class="dim loading">Loading projects<span class="ell"></span></p>'),
+  )
 
   const done = count('done')
   const toggle = $('#toggle-done')
@@ -311,19 +325,32 @@ function phasesHtml(item) {
     .join('')}</div></div>`
 }
 
+function voteRow(name, v) {
+  const [label, ic, tone] = VOTE[v.vote] ?? ['Unknown', 'circle-dot', '']
+  const time = v.time
+    ? v.hash
+      ? `<a class="num" href="https://zenonhub.io/explorer/block/${v.hash}" target="_blank" rel="noopener" title="${new Date(v.time * 1000).toISOString()}">${when(v.time)}</a>`
+      : `<span class="num">${when(v.time)}</span>`
+    : ''
+  return `<div class="row"><span class="name">${name}</span>${chip(label, ic, tone)}<span class="when">${time}</span></div>`
+}
+
 function votersHtml(voters) {
   if (!voters || voters.length === 0) return '<p class="dim">None yet</p>'
-  return `<div class="rows">${voters
-    .map((v) => {
-      const [label, ic, tone] = VOTE[v.vote] ?? ['Unknown', 'circle-dot', '']
-      const time = v.time
-        ? v.hash
-          ? `<a class="num" href="https://zenonhub.io/explorer/block/${v.hash}" target="_blank" rel="noopener" title="${new Date(v.time * 1000).toISOString()}">${when(v.time)}</a>`
-          : `<span class="num">${when(v.time)}</span>`
-        : ''
-      return `<div class="row"><span class="name">${esc(v.name)}</span>${chip(label, ic, tone)}<span class="when">${time}</span></div>`
-    })
-    .join('')}</div>`
+  return `<div class="rows">${voters.map((v) => voteRow(esc(v.name), v)).join('')}</div>`
+}
+
+// Votes the contract refused: any address can send one, and it is on chain, but
+// only a Pillar's owner or producer is counted.
+function proxiesHtml(proxies) {
+  if (!proxies || proxies.length === 0) return ''
+  const rows = proxies.map((v) => {
+    const who = `<a class="num" href="https://zenonhub.io/explorer/account/${v.address}" target="_blank" rel="noopener" title="${v.address}">${short(v.address)}</a>`
+    const as = v.claimed ? `<span class="dim"> as ${esc(v.claimed)}</span>` : ''
+    return voteRow(who + as, v)
+  })
+  return `<div class="proxies"><div class="label sub-h proxy-h">${icon('triangle-alert')}Proxy votes · <span class="num">${proxies.length}</span><span class="dim">Not counted</span></div>
+    <div class="rows">${rows.join('')}</div></div>`
 }
 
 function voteSectionHtml(item, byId) {
@@ -339,11 +366,13 @@ function voteSectionHtml(item, byId) {
   }
   return sections
     .map((s, i) => {
-      const list = votersHtml(byId.get(s.id))
-      const head = `${esc(s.title)} · <span class="num">${s.votes?.total ?? 0}</span>`
+      const { pillars, proxies } = byId.get(s.id) ?? {}
+      const list = votersHtml(pillars) + proxiesHtml(proxies)
+      const extra = proxies?.length ? ` · <span class="num">${proxies.length}</span> proxy` : ''
+      const head = `${esc(s.title)} · <span class="num">${s.votes?.total ?? 0}</span>${extra}`
       return i === 0
         ? `<div><div class="label sub-h">${head}</div>${list}</div>`
-        : `<details><summary class="label sub-h">${head}</summary>${list}</details>`
+        : `<details data-section="${s.id}" ${state.openSections.has(s.id) ? 'open' : ''}><summary class="label sub-h">${head}</summary>${list}</details>`
     })
     .join('')
 }
@@ -353,19 +382,27 @@ function voteBoxHtml(item, byId) {
   const a = state.account
   let line
   let eligible = false
-  if (!a) line = `<span class="dim">Connect a Pillar's owner or producer address to vote.</span>`
-  else if (a.chainId != null && a.chainId !== chain.MAINNET_CHAIN_ID)
+  const proxy = !!a && !a.pillar
+  if (!a) line = `<span class="dim">Connect to vote. Only Pillar votes count.</span>`
+  else if (!onMainnet(a))
     line = `${chip('Wrong network', 'triangle-alert', 'amber')}<span class="dim">Switch Syrius to Zenon Mainnet.</span>`
-  else if (!a.pillar) line = `<span class="dim">${short(a.address)} runs no Pillar.</span>`
-  else {
+  else if (proxy) {
+    eligible = true
+    line = `${chip('Proxy vote', 'triangle-alert', 'amber')}<span class="dim">${short(a.address)} runs no Pillar. Shown here, not counted.</span>`
+  } else {
     eligible = true
     line = `<span>Voting as <b>${esc(a.pillar.name)}</b></span>`
   }
-  const mine = a?.pillar ? byId?.get(item.target.id)?.find((v) => v.name === a.pillar.name)?.vote : undefined
+  const cast = byId?.get(item.target.id)
+  const mine = !a
+    ? undefined
+    : proxy
+      ? cast?.proxies.find((v) => v.address === a.address)?.vote
+      : cast?.pillars.find((v) => v.name === a.pillar.name)?.vote
   if (mine !== undefined) line += chip(`You voted ${VOTE[mine][0]}`, VOTE[mine][1], VOTE[mine][2])
   const disabled = state.sending || (a && !eligible) ? 'disabled' : ''
   const cls = ['yes', 'no', 'abs']
-  return `<div class="vote">
+  return `<div class="vote ${proxy ? 'proxy' : ''}">
     <div class="vote-h"><span class="label">${item.group === 'payout' ? esc(item.target.name) : 'Project'}</span>${line}</div>
     <div class="vote-btns">${VOTE.map(
       ([label, ic], v) => `<button class="btn ${cls[v]} ${mine === v ? 'mine' : ''}" type="button" data-vote="${v}" ${disabled}>${icon(ic)}${label}</button>`,
@@ -385,7 +422,8 @@ function bodyHtml(item, meta) {
         )
         .join('')}</ul></div>`
     : ''
-  return `<div class="body">
+  // Slides in when opened, not on every re-render after.
+  return `<div class="body ${state.justOpened === item.project.id ? 'enter' : ''}">
     ${item.project.description ? `<p class="desc">${esc(item.project.description)}</p>` : ''}
     ${linksHtml(item, meta)}
     ${changes}
@@ -396,6 +434,8 @@ function bodyHtml(item, meta) {
 }
 
 // ---------- wallet ----------
+
+const onMainnet = (a) => a.chainId == null || a.chainId === chain.MAINNET_CHAIN_ID
 
 function matchPillar() {
   const a = state.account
@@ -439,7 +479,7 @@ async function onConnect() {
   try {
     const s = await wallet.connect((secs) => secs && ($('#connect-label').textContent = `Wait ${secs} s`))
     await setAccount(s)
-    if (s.address && !state.account.pillar) toast('info', 'This address runs no Pillar')
+    if (s.address && !state.account.pillar) toast('info', 'No Pillar here. Your votes are proxy votes, not counted.')
   } catch (err) {
     showAccount()
     toast(err.declined ? 'info' : 'err', err.message)
@@ -449,13 +489,15 @@ async function onConnect() {
 async function onVote(item, vote) {
   if (!state.account) return onConnect()
   const a = state.account
-  if (!a.pillar || state.sending) return
+  if (!onMainnet(a) || state.sending) return
   state.sending = true
   render()
   try {
-    const template = chain.voteTemplate(item.target.id, vote, a.byName ? a.pillar.name : null)
+    // Without a Pillar the block goes by producer address and claims no name.
+    const template = chain.voteTemplate(item.target.id, vote, a.pillar && a.byName ? a.pillar.name : null)
     const sent = await wallet.send(template, (secs) => secs && toast('info', `Syrius is busy. Asking again in ${secs} s`, null, null, 1000))
-    toast('ok', `Voted ${VOTE[vote][0]}`, `https://zenonhub.io/explorer/block/${sent.hash}`, 'View')
+    const done = a.pillar ? `Voted ${VOTE[vote][0]}` : `Proxy vote ${VOTE[vote][0]} sent. Not counted.`
+    toast('ok', done, `https://zenonhub.io/explorer/block/${sent.hash}`, 'View')
     // Confirmed in a momentum or two, received by the contract after that.
     setTimeout(() => refresh(true), 25000)
   } catch (err) {
@@ -494,10 +536,24 @@ $('#groups').addEventListener('click', (e) => {
   if (state.open.has(id)) state.open.delete(id)
   else {
     state.open.add(id)
+    state.justOpened = id
     if (!state.votes.has(id)) loadVotes(item)
   }
   render()
+  state.justOpened = null
 })
+
+// `toggle` does not bubble, so it is caught on the way down.
+$('#groups').addEventListener(
+  'toggle',
+  (e) => {
+    const id = e.target.dataset?.section
+    if (!id) return
+    if (e.target.open) state.openSections.add(id)
+    else state.openSections.delete(id)
+  },
+  true,
+)
 
 $('#connect').addEventListener('click', onConnect)
 $('#toggle-done').addEventListener('click', () => {
@@ -506,18 +562,34 @@ $('#toggle-done').addEventListener('click', () => {
   render()
 })
 
+// A slow node can take longer than the interval; a tick that finds the last one
+// still running is skipped rather than stacked behind it.
 async function refresh(votesToo = false) {
+  if (state.refreshing) return
+  state.refreshing = true
   try {
     await loadChain()
     render()
+    const loads = []
     for (const id of state.open) {
       const item = state.items.find((it) => it.project.id === id)
-      if (item && (votesToo || state.votes.has(id))) loadVotes(item, true)
+      if (item && (votesToo || state.votes.has(id))) loads.push(loadVotes(item, true))
     }
+    await Promise.all(loads)
   } catch (err) {
     console.warn('[az] refresh', err)
     nodeDown()
+  } finally {
+    state.refreshing = false
   }
+}
+
+const REFRESH_MS = 10000
+
+// A hidden tab does not poll; it catches up the moment it is shown again.
+function autoRefresh() {
+  setInterval(() => document.hidden || refresh(false), REFRESH_MS)
+  document.addEventListener('visibilitychange', () => document.hidden || refresh(false))
 }
 
 /** The slow, complete list. Anything new is read by id from then on. */
@@ -553,7 +625,7 @@ async function start() {
     await loadChain()
   } catch (err) {
     nodeDown()
-    $('#groups').innerHTML = '<p class="dim">No node answered. Reload to try again.</p>'
+    setHtml('#groups', '<p class="dim">No node answered. Reload to try again.</p>')
     return
   }
   render()
@@ -563,7 +635,7 @@ async function start() {
     if (s.address) await setAccount(s)
     wallet.onChange(async () => setAccount(await wallet.state()))
   }
-  setInterval(() => refresh(false), 60000)
+  autoRefresh()
 }
 
 start()

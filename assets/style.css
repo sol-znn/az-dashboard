@@ -207,7 +207,8 @@ button { font: inherit; color: inherit; }
 
 /* ---------- body ---------- */
 
-.body { border-top: 1px solid var(--border); padding: 16px; display: grid; gap: 20px; animation: slide 240ms var(--ease); }
+.body { border-top: 1px solid var(--border); padding: 16px; display: grid; gap: 20px; }
+.body.enter { animation: slide 240ms var(--ease); }
 @keyframes slide { from { opacity: 0; transform: translateY(-8px); } }
 .desc { color: var(--fg-dim); }
 .links { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -237,6 +238,15 @@ button { font: inherit; color: inherit; }
 .phase-row { grid-template-columns: 1fr auto auto; }
 
 .vote { display: grid; gap: 10px; padding: 14px; background: var(--sunken); border-radius: var(--radius); }
+/* A proxy vote is on chain and never counted; the box says so before the click. */
+.vote.proxy { box-shadow: inset 0 0 0 1px var(--amber); }
+
+.proxies { margin-top: 14px; }
+.proxy-h { display: flex; align-items: center; gap: 6px; }
+.proxy-h .i { width: 13px; height: 13px; color: var(--amber); }
+.proxy-h .dim { margin-left: auto; text-transform: none; letter-spacing: 0; }
+.proxies .rows { border-style: dashed; }
+.proxies .row .name a { color: var(--fg); }
 .vote-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 13px; }
 .vote-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .vote-btns .btn { --btn-bg: var(--card); border-radius: var(--radius); min-height: 44px; }
