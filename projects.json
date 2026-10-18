@@ -1,0 +1,202 @@
+{
+  "owner": "z1qrw2vecdddmft89xh6yqencmjergsshhfmks0l",
+  "updated": "2026-10-17",
+  "projects": {
+    "b6413cb67dd40edebe5006eaaaf6b31264f06d8ee333f4bfa21c67f0536a72d1": {
+      "status": "delivered",
+      "links": [
+        { "kind": "live", "label": "bridge.zenon.foo", "url": "https://bridge.zenon.foo" },
+        { "kind": "repo", "label": "bridge.mainnet.zenon.community", "url": "https://github.com/sol-znn/bridge.mainnet.zenon.community" },
+        { "kind": "docs", "label": "Architecture", "url": "https://github.com/sol-znn/bridge.mainnet.zenon.community/blob/main/docs/ARCHITECTURE.md" }
+      ],
+      "changelog": [
+        "Rebuilt from a compiled bundle into Vue 3, TypeScript and Vite source, built on GitHub Pages",
+        "Bridge health read from the bridge contract's own blocks: signing, stalled, halted, key generation",
+        "Syrius extension plus any EIP-6963 wallet; networks and tokens read from the chain",
+        "Recipients with no plasma detected, with one-click fusing",
+        "EVM swaps through KyberSwap, Across and LI.FI, with pinned router contracts",
+        "77 unit tests, a bridge lab run end to end, swaps run on a mainnet fork",
+        "Open: edgepillar's PR #3, to be handled before the upstream merge"
+      ]
+    },
+    "a0c1422009812caf85ab19923653d95c97f5243630b18d245a1c7817a242580c": {
+      "status": "delivered",
+      "links": [
+        { "kind": "release", "label": "v0.3.6", "url": "https://github.com/sol-znn/syrius-extension/releases/tag/v0.3.6" },
+        { "kind": "repo", "label": "syrius-extension", "url": "https://github.com/sol-znn/syrius-extension" },
+        { "kind": "docs", "label": "Changelog", "url": "https://github.com/sol-znn/syrius-extension/blob/master/CHANGELOG.md" }
+      ],
+      "changelog": [
+        "Approvals single use, bound to the page, the account and the exact block shown",
+        "A site sees nothing before consent; one window per 30 s, four pending per tab",
+        "Interrupted sends recorded and resent as the same bytes, never replaced",
+        "Pillar, Sentinel, Accelerator-Z and Sporks operator modes",
+        "Proof of work on up to four cores; token issue, mint and burn; address book",
+        "Android APK, iOS IPA and Firefox XPI beside the Chrome and Brave ZIP",
+        "39 test suites: 32 in Node, 7 in a real browser"
+      ]
+    },
+    "c104ab964cebbb6f321d68586537b1009869c0fdbcd4a741f98bb6f1dd4198a5": {
+      "status": "waiting for zip",
+      "links": [
+        { "kind": "forum", "label": "Perpetual funding of AZ (2023)", "url": "https://forum.zenon.org/t/perpetual-funding-of-az/1448" }
+      ],
+      "changelog": [
+        "Model of every reward stream, read from mainnet",
+        "Proposed: 5% of every booked reward to AZ, with issuance unchanged",
+        "Duty tiers by each Pillar's AZ voting record",
+        "Delegator feedback collected",
+        "Next: the ZIP and its reference implementation"
+      ]
+    },
+    "eb79d0eda7f572b4b1ce706300b52593ff597639bf4b04f7d1c14f053cfa6092": {
+      "status": "waiting for zip",
+      "links": [
+        { "kind": "demo", "label": "pillar.zenon.foo", "url": "https://pillar.zenon.foo/" },
+        { "kind": "repo", "label": "pillar-transfer-console", "url": "https://github.com/sol-znn/pillar-transfer-console" }
+      ],
+      "changelog": [
+        "Draft ZIP: LockOwnership, TakeOwnership and a Revoke guard on the Pillar contract",
+        "Four design iterations, each with a written adversarial review",
+        "Consensus hazards closed in the draft: spork diff, ABI re-pack, fail-closed lock checks",
+        "Both swaps specified: BTC for a Pillar and ZNN for a Pillar, with leg ordering",
+        "Console and scenarios page running the reference implementation",
+        "Next: ZIP submitted and accepted (Phase 1)"
+      ]
+    },
+    "cde11f9466a48f00b88879c8650f325efc1b57435990f944496fffe746b07e10": {
+      "status": "waiting for spork",
+      "links": [
+        { "kind": "pr", "label": "go-zenon #138 (merged)", "url": "https://github.com/zenon-network/go-zenon/pull/138" },
+        { "kind": "branch", "label": "sol-znn/go-zenon ptlc", "url": "https://github.com/sol-znn/go-zenon/tree/ptlc" },
+        { "kind": "demo", "label": "Lab scenarios", "url": "https://ptlc.zenon.foo/scenarios/" },
+        { "kind": "repo", "label": "ptlc-console", "url": "https://github.com/sol-znn/ptlc-console" }
+      ],
+      "changelog": [
+        "PR #138 against dev: 31 commits, +5,034 lines, every contributor's commits kept",
+        "Unlock fails closed; the unlock message is bound to chain, contract and destination",
+        "A third point type, secp256k1, and a fixed destination for scalar locks",
+        "Witness bounded to 32 or 64 bytes; small-order Ed25519 keys refused",
+        "All findings from 0x3639's and edgepillar's reviews fixed",
+        "NoM to NoM and NoM to BTC (regtest) swaps run end to end, refunds included",
+        "PR #138 merged into dev on 2026-10-15",
+        "Next: a release, then ActivateSpork in the window from about 2026-11-03"
+      ]
+    },
+    "c4fee96c72cf8812d6cd7fee5ec4a5bc8fba0be5429c4c3b66847fb760055ed2": {
+      "status": "delivered",
+      "links": [
+        { "kind": "live", "label": "Zenon Faucet", "url": "https://zenoglyphs.zenon.foo/" },
+        { "kind": "repo", "label": "zenon-faucet", "url": "https://github.com/sol-znn/zenon-faucet" },
+        { "kind": "repo", "label": "znn-address-generator-go", "url": "https://github.com/sol-znn/znn-address-generator-go" },
+        { "kind": "repo", "label": "znn-address-generator-cuda", "url": "https://github.com/sol-znn/znn-address-generator-cuda" },
+        { "kind": "repo", "label": "zts-airdrop", "url": "https://github.com/sol-znn/zts-airdrop" },
+        { "kind": "repo", "label": "vanity-zts", "url": "https://github.com/sol-znn/vanity-zts" }
+      ],
+      "changelog": [
+        "Zenon Faucet: PP for GLYPH over two HTLCs, signed through the Syrius extension",
+        "znn-address-generator-go v1.0.0, with release binaries",
+        "znn-address-generator-cuda: 55,962 mnemonics/s on an RTX 3060",
+        "zts-airdrop v0.1.0: dry run by default, resumable, scan digest and replay",
+        "vanity-zts v1.0.0: ZTS id search offline, only the winning block signed"
+      ]
+    },
+    "fe34d75feab3fbd3c8c2abc971ae3cf53b4315de83d396e3616b2090a60df1f1": {
+      "status": "delivered",
+      "links": [
+        { "kind": "live", "label": "ferry.zenon.foo", "url": "https://ferry.zenon.foo/" },
+        { "kind": "repo", "label": "ferry-web", "url": "https://github.com/sol-znn/ferry-web" }
+      ],
+      "changelog": [
+        "BTC and ZNN atomic swaps live on mainnet",
+        "Swap engine in Go and WebAssembly; the Zenon leg signed by the Syrius extension",
+        "Strict HTLC checks, and preimage recovery from the HTLC contract's chain",
+        "Auto Mode, live sessions over Nostr and a public offer board",
+        "Recovery without the site: pre-signed refund, offline Recover page, export",
+        "Review of be879e1b: all 7 findings fixed with regression tests (v0.1.1)"
+      ]
+    },
+    "361484b40acedc86299d6d96340bdfb9af33b63657e150f4749cff820a2a6312": {
+      "status": "delivered",
+      "links": [
+        { "kind": "live", "label": "ferry.zenon.foo", "url": "https://ferry.zenon.foo/" },
+        { "kind": "repo", "label": "ferry-web", "url": "https://github.com/sol-znn/ferry-web" }
+      ],
+      "changelog": [
+        "BTC and ZNN atomic swaps live on mainnet",
+        "Swap engine in Go and WebAssembly; the Zenon leg signed by the Syrius extension",
+        "Strict HTLC checks, and preimage recovery from the HTLC contract's chain",
+        "Auto Mode, live sessions over Nostr and a public offer board",
+        "Recovery without the site: pre-signed refund, offline Recover page, export",
+        "Review of be879e1b: all 7 findings fixed with regression tests (v0.1.1)"
+      ]
+    },
+    "32f44c509cbf75af823174cf5d9ae1b6ab902b5e12abe17a3aec5e2f3d3de5f2": {
+      "status": "in development",
+      "links": [
+        { "kind": "branch", "label": "ferry-web feat/v2", "url": "https://github.com/sol-znn/ferry-web/tree/feat/v2" }
+      ],
+      "changelog": [
+        "One swap model across chains: BTC, SOL and ZTS legs, one module per chain",
+        "Solana HTLC program, ferry-htlc, paying fixed addresses on both branches",
+        "Phantom alongside Syrius and UniSat",
+        "Offer board asks for a proven address on every chain an offer settles on",
+        "Next: the Solana program on a public cluster, and v2 merged into the main site"
+      ]
+    },
+    "520dc9ef165bd2a0726c96b94fddfbc5e45942aa0a8b0f8934f742a69d958896": {
+      "status": "delivered",
+      "links": [
+        { "kind": "release", "label": "v0.3.5", "url": "https://github.com/sol-znn/syrius-extension/releases/tag/v0.3.5" },
+        { "kind": "release", "label": "v0.3.3", "url": "https://github.com/sol-znn/syrius-extension/releases/tag/v0.3.3" },
+        { "kind": "repo", "label": "syrius-extension", "url": "https://github.com/sol-znn/syrius-extension" }
+      ],
+      "changelog": [
+        "Every live defect in 0.1.10 fixed: wrong signing address, lost base units, no BIP-39 checksum",
+        "Popup bundle cut from 7.95 MiB to 146 KiB; one signing path instead of six",
+        "Sessions with a real auto-lock; the plaintext password oracle removed",
+        "window.zenon provider with per-origin permissions, events and signMessage",
+        "Tokens screen and readable history; CI publishes each release with its SHA-256",
+        "0.3.5: redesign in dark and light, and Pillar, Sentinel, AZ and Sporks modes"
+      ]
+    },
+    "21636c08647b6ce35258271cb5f6b8bca5e50916d8b967ce0d6bdcdb25e767c2": {
+      "status": "in development",
+      "links": [
+        { "kind": "demo", "label": "Status", "url": "https://devnet.zenon.foo/status/" },
+        { "kind": "demo", "label": "Explorer", "url": "https://devnet.zenon.foo/explorer/" }
+      ],
+      "changelog": [
+        "Specification with golden test vectors",
+        "Go derivation node: one EVM block per momentum over the Engine API, op-reth beneath",
+        "Reorgs rewind the EVM; derived state agreed across nodes",
+        "Stock contracts run unmodified: a Uniswap V2 pair, ERC-721s",
+        "Source still private"
+      ]
+    },
+    "8d416a0c27e1138aba18b8cfa6793368644534c0e076b6a7862c2adf5b73d306": {
+      "status": "in development",
+      "links": [
+        { "kind": "demo", "label": "Glyphswap", "url": "https://devnet.zenon.foo/glyphswap/" },
+        { "kind": "demo", "label": "Karum", "url": "https://devnet.zenon.foo/karum/" },
+        { "kind": "demo", "label": "Faucet", "url": "https://devnet.zenon.foo/glyphswap/faucet" }
+      ],
+      "changelog": [
+        "MetaMask path: a relayer batches signed transactions into NoM blocks",
+        "Syrius path: native transactions from a Zenon account",
+        "Explorer, Glyphswap DEX and Karum NFT market live on the devnet",
+        "Next: deposits and an escrow exit to L1 ZNN"
+      ]
+    },
+    "3a7cf7dcc77eb60e55e5912b894d73f6298e53f4f969991ac664d9222d4b1c11": {
+      "status": "planned",
+      "links": [
+        { "kind": "demo", "label": "Status", "url": "https://devnet.zenon.foo/status/" }
+      ],
+      "changelog": [
+        "Not started: mainnet start height, published spec, vectors and binaries",
+        "Not started: three independent operators and a divergence bisect tool"
+      ]
+    }
+  }
+}

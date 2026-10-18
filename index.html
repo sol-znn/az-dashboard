@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AZ dashboard</title>
+  <meta name="description" content="sol's Accelerator-Z projects, live from Zenon mainnet.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/style.css">
+  <script type="module" src="assets/app.js"></script>
+</head>
+<body>
+  <div id="icons" hidden></div>
+  <header class="bar">
+    <div class="wrap bar-in">
+      <a class="brand" href="./">AZ dashboard</a>
+      <span class="node" id="node" title="Mainnet node"><span class="dot"></span><span class="num" id="height">connecting</span></span>
+      <span class="grow"></span>
+      <button class="btn btn-plasma" id="connect" type="button">
+        <svg class="i"><use href="#i-wallet"/></svg><span id="connect-label">Connect</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <h1>Accelerator-Z</h1>
+      <p class="dim">Projects by <a class="addr num" id="owner" target="_blank" rel="noopener"></a>, live from mainnet.</p>
+    </section>
+
+    <section class="strip" id="strip" aria-label="Summary"></section>
+
+    <div id="groups"><p class="dim loading">Loading projects<span class="ell"></span></p></div>
+
+    <button class="more" id="toggle-done" type="button" hidden>
+      <svg class="i"><use href="#i-eye"/></svg><span id="toggle-done-label"></span>
+    </button>
+  </main>
+
+  <footer class="wrap foot dim">
+    <span>Data from <span class="num" id="foot-node"></span></span>
+    <a href="https://github.com/sol-znn/az-dashboard" target="_blank" rel="noopener">Source</a>
+  </footer>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+</body>
+</html>

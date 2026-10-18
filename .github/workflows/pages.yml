@@ -1,0 +1,55 @@
+# Publish the page to GitHub Pages on every push to main.
+#
+# There is no build: the site is the files as they are. The job copies only what
+# the page serves into _site, so the README and this workflow are not published,
+# and refuses a projects.json that does not parse or a page that loads a CDN.
+# Settings > Pages > Source must be "GitHub Actions".
+
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check projects.json parses
+        run: python3 -m json.tool projects.json > /dev/null
+      - name: Refuse anything loaded from a CDN
+        run: |
+          if grep -rlE "https?://(cdn\.|unpkg\.com|fonts\.googleapis|fonts\.gstatic|cdnjs\.|cdn\.jsdelivr)" index.html assets/; then
+            echo "the page references a CDN"; exit 1
+          fi
+      - name: Collect the site
+        run: |
+          mkdir _site
+          cp -r index.html projects.json .nojekyll assets _site/
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
